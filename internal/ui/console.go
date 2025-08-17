@@ -116,7 +116,7 @@ func (c *console) Confirm(message string) bool {
 // PrintDependencies displays a numbered list of dependencies
 func (c *console) PrintDependencies(deps []dependency.Dependency, title string) {
 	if title != "" {
-		c.Info(title)
+		c.Info("%s", title)
 	}
 	fmt.Println()
 

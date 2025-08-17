@@ -27,4 +27,8 @@ go.work.sum
 # env file
 .env
 
+# Generated build
 /build
+
+# Generated mocks
+/internal/mocks/

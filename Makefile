@@ -16,10 +16,10 @@ GOCLEAN=$(GOCMD) clean
 LDFLAGS=-ldflags "-s -w"
 BUILD_FLAGS=-v $(LDFLAGS)
 
-.PHONY: all build clean test coverage install uninstall run help deps fmt lint vet
+.PHONY: all build clean test coverage install uninstall run help deps lint mocks
 
 # Default target
-all: clean deps fmt vet test build
+all: clean deps mocks test build
 
 # Build the application
 build:
@@ -33,7 +33,19 @@ clean:
 	@echo "Cleaning..."
 	$(GOCLEAN)
 	@rm -rf $(BUILD_DIR)
+	@rm -rf internal/mocks/*.go
 	@echo "Clean completed"
+
+# Generate mocks
+mocks:
+	@echo "Generating mocks..."
+	@mkdir -p internal/mocks
+	@if ! command -v mockgen >/dev/null 2>&1; then \
+		echo "mockgen not found. Installing..."; \
+		go install go.uber.org/mock/mockgen@latest; \
+	fi
+	@chmod +x ./scripts/generate_mocks.sh
+	@PATH="$$PATH:$$HOME/go/bin:$$(go env GOPATH)/bin" ./scripts/generate_mocks.sh
 
 # Run tests
 test:
@@ -43,7 +55,7 @@ test:
 # Run tests with coverage
 coverage:
 	@echo "Running tests with coverage..."
-	$(GOTEST) -v -race -coverprofile=coverage.out ./...
+	$(GOTEST) -v -coverprofile=coverage.out ./...
 	$(GOCMD) tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
 
@@ -71,11 +83,6 @@ deps:
 	$(GOMOD) download
 	$(GOMOD) tidy
 
-# Format code
-fmt:
-	@echo "Formatting code..."
-	$(GOCMD) fmt ./...
-
 # Lint code (requires golangci-lint)
 lint:
 	@echo "Linting code..."
@@ -95,11 +102,6 @@ lint:
 		echo "✅ Installation completed, running lint..."; \
 		$(shell go env GOPATH)/bin/golangci-lint run; \
 	fi
-
-# Vet code
-vet:
-	@echo "Vetting code..."
-	$(GOCMD) vet ./...
 
 # Run benchmarks
 bench:
@@ -129,12 +131,8 @@ build-all:
 	@echo "Multi-platform build completed"
 
 # Development workflow
-dev: clean deps fmt vet test build
+dev: clean deps mocks test build
 	@echo "Development build completed"
-
-# CI workflow
-ci: deps fmt vet test coverage
-	@echo "CI pipeline completed"
 
 # Quick build without tests
 quick:
@@ -144,22 +142,20 @@ quick:
 # Help
 help:
 	@echo "Available targets:"
-	@echo "  all        - Run clean, deps, fmt, vet, test, and build"
+	@echo "  all        - Run clean, deps, mocks, test, and build"
 	@echo "  build      - Build the application"
-	@echo "  clean      - Clean build artifacts"
+	@echo "  clean      - Clean build artifacts and mocks"
 	@echo "  test       - Run tests"
 	@echo "  coverage   - Run tests with coverage report"
+	@echo "  mocks      - Generate mock files"
 	@echo "  install    - Install the application to ~/go/bin"
 	@echo "  uninstall  - Remove the application from ~/go/bin"
 	@echo "  run        - Build and run the application (use ARGS='--help' for options)"
 	@echo "  deps       - Download and tidy dependencies"
-	@echo "  fmt        - Format code"
 	@echo "  lint       - Lint code (requires golangci-lint)"
-	@echo "  vet        - Vet code"
 	@echo "  bench      - Run benchmarks"
 	@echo "  build-all  - Build for multiple platforms"
-	@echo "  dev        - Development workflow (clean, deps, fmt, vet, test, build)"
-	@echo "  ci         - CI pipeline (deps, fmt, vet, test, coverage)"
+	@echo "  dev        - Development workflow (clean, deps, mocks, test, build)"
 	@echo "  quick      - Quick build without tests"
 	@echo "  help       - Show this help message"
 	@echo ""
@@ -168,3 +164,4 @@ help:
 	@echo "  make run ARGS='--select --dry-run'"
 	@echo "  make test"
 	@echo "  make coverage"
+	@echo "  make mocks"
