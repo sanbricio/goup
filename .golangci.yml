@@ -1,0 +1,119 @@
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  modules-download-mode: readonly
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  govet:
+    check-shadowing: true
+    enable-all: true
+
+  gocyclo:
+    min-complexity: 15
+
+  dupl:
+    threshold: 100
+
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+
+  misspell:
+    locale: US
+
+  lll:
+    line-length: 120
+
+  gofmt:
+    simplify: true
+
+  goimports:
+    local-prefixes: goup
+
+  gomnd:
+    settings:
+      mnd:
+        checks: argument,case,condition,operation,return,assign
+
+  godox:
+    keywords:
+      - NOTE
+      - OPTIMIZE
+      - HACK
+
+  revive:
+    min-confidence: 0.8
+
+linters:
+  enable:
+    - bodyclose
+    - deadcode
+    - depguard
+    - dogsled
+    - dupl
+    - errcheck
+    - gochecknoinits
+    - goconst
+    - gocyclo
+    - gofmt
+    - goimports
+    - gomnd
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - nakedret
+    - revive
+    - staticcheck
+    - structcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - whitespace
+
+  disable:
+    - funlen # Too restrictive for some functions
+    - gocognit # Too restrictive
+    - nestif # Too restrictive
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - gomnd
+        - dupl
+        - lll
+
+    # Exclude gomnd for main.go flag parsing
+    - path: cmd/goup/main\.go
+      linters:
+        - gomnd
+
+    # Exclude gosec for test files
+    - path: _test\.go
+      linters:
+        - gosec
+
+  exclude:
+    # errcheck: Almost all programs ignore errors on these functions
+    - Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*printf?|os\.(Un)?Setenv). is not checked
+
+  max-issues-per-linter: 0
+  max-same-issues: 0
