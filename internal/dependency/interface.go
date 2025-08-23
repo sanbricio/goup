@@ -22,4 +22,6 @@ type Manager interface {
 	GetDependencies() ([]Dependency, error)
 	// FilterDependencies filters dependencies based on criteria
 	FilterDependencies(deps []Dependency, includeIndirect bool) []Dependency
+	// GetUpdatableDependencies returns only dependencies that have updates available
+	GetUpdatableDependencies() ([]Dependency, error)
 }

@@ -27,8 +27,8 @@ func TestRunNoDependencies(t *testing.T) {
 
 	// Setup expectations
 	console.EXPECT().Header().Times(1)
-	depMgr.EXPECT().GetDependencies().Return([]dependency.Dependency{}, nil).Times(1)
-	console.EXPECT().Info("No dependencies found to update").Times(1)
+	depMgr.EXPECT().GetUpdatableDependencies().Return([]dependency.Dependency{}, nil).Times(1)
+	console.EXPECT().Info("All dependencies are up to date! 🎉").Times(1)
 
 	app := New(cfg, console, depMgr, sel, upd)
 	err := app.Run()
@@ -48,13 +48,13 @@ func TestRunGetDependenciesError(t *testing.T) {
 
 	// Setup expectations
 	console.EXPECT().Header().Times(1)
-	depMgr.EXPECT().GetDependencies().Return(nil, errors.New("failed to read go.mod")).Times(1)
+	depMgr.EXPECT().GetUpdatableDependencies().Return(nil, errors.New("failed to read go.mod")).Times(1)
 
 	app := New(cfg, console, depMgr, sel, upd)
 	err := app.Run()
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to read dependencies")
+	assert.Contains(t, err.Error(), "failed to check for dependency updates")
 }
 
 func TestRunNoDirectDependencies(t *testing.T) {
@@ -73,9 +73,10 @@ func TestRunNoDirectDependencies(t *testing.T) {
 
 	// Setup expectations
 	console.EXPECT().Header().Times(1)
-	depMgr.EXPECT().GetDependencies().Return(deps, nil).Times(1)
+	depMgr.EXPECT().GetUpdatableDependencies().Return(deps, nil).Times(1)
 	depMgr.EXPECT().FilterDependencies(deps, false).Return([]dependency.Dependency{}).Times(1)
-	console.EXPECT().Info("No direct dependencies found to update").Times(1)
+	console.EXPECT().Info("All direct dependencies are up to date! 🎉").Times(1)
+	console.EXPECT().Info("(%d indirect dependencies have updates available, use --all to include them)", 1).Times(1)
 
 	app := New(cfg, console, depMgr, sel, upd)
 	err := app.Run()
@@ -98,10 +99,11 @@ func TestRunDryRun(t *testing.T) {
 	}
 
 	// Setup expectations
+	console.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
 	console.EXPECT().Header().Times(1)
-	depMgr.EXPECT().GetDependencies().Return(deps, nil).Times(1)
+	depMgr.EXPECT().GetUpdatableDependencies().Return(deps, nil).Times(1)
 	depMgr.EXPECT().FilterDependencies(deps, false).Return(deps).Times(1)
-	console.EXPECT().PrintDependencies(deps, "Found 1 direct dependencies to update:").Times(1)
+	console.EXPECT().PrintDependencies(deps, "Found 1 direct dependencies with available updates:").Times(1)
 	console.EXPECT().Warning("Dry run mode - no actual updates will be performed").Times(1)
 
 	app := New(cfg, console, depMgr, sel, upd)
@@ -126,7 +128,8 @@ func TestRunSelectiveModeCancelled(t *testing.T) {
 
 	// Setup expectations
 	console.EXPECT().Header().Times(1)
-	depMgr.EXPECT().GetDependencies().Return(deps, nil).Times(1)
+	console.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	depMgr.EXPECT().GetUpdatableDependencies().Return(deps, nil).Times(1)
 	depMgr.EXPECT().FilterDependencies(deps, false).Return(deps).Times(1)
 	sel.EXPECT().Select(deps, false).Return(selector.SelectionResult{Cancelled: true}).Times(1)
 	console.EXPECT().Info("No dependencies selected for update").Times(1)
@@ -153,7 +156,8 @@ func TestRunSelectiveModeError(t *testing.T) {
 
 	// Setup expectations
 	console.EXPECT().Header().Times(1)
-	depMgr.EXPECT().GetDependencies().Return(deps, nil).Times(1)
+	console.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	depMgr.EXPECT().GetUpdatableDependencies().Return(deps, nil).Times(1)
 	depMgr.EXPECT().FilterDependencies(deps, false).Return(deps).Times(1)
 	sel.EXPECT().Select(deps, false).Return(selector.SelectionResult{Error: errors.New("selection failed")}).Times(1)
 
@@ -180,9 +184,10 @@ func TestRunInteractiveModeDeclined(t *testing.T) {
 
 	// Setup expectations
 	console.EXPECT().Header().Times(1)
-	depMgr.EXPECT().GetDependencies().Return(deps, nil).Times(1)
+	console.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	depMgr.EXPECT().GetUpdatableDependencies().Return(deps, nil).Times(1)
 	depMgr.EXPECT().FilterDependencies(deps, false).Return(deps).Times(1)
-	console.EXPECT().PrintDependencies(deps, "Found 1 direct dependencies to update:").Times(1)
+	console.EXPECT().PrintDependencies(deps, "Found 1 direct dependencies with available updates:").Times(1)
 	console.EXPECT().Confirm("Do you want to proceed with the update?").Return(false).Times(1)
 	console.EXPECT().Info("Update cancelled").Times(1)
 
@@ -214,9 +219,10 @@ func TestRunSuccessfulUpdate(t *testing.T) {
 
 	// Setup expectations
 	console.EXPECT().Header().Times(1)
-	depMgr.EXPECT().GetDependencies().Return(deps, nil).Times(1)
+	console.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	depMgr.EXPECT().GetUpdatableDependencies().Return(deps, nil).Times(1)
 	depMgr.EXPECT().FilterDependencies(deps, false).Return(deps).Times(1)
-	console.EXPECT().PrintDependencies(deps, "Found 1 direct dependencies to update:").Times(1)
+	console.EXPECT().PrintDependencies(deps, "Found 1 direct dependencies with available updates:").Times(1)
 	console.EXPECT().Info("Updating dependencies...").Times(1)
 
 	// Progress usa formato con argumentos
@@ -267,9 +273,10 @@ func TestRunUpdateWithErrors(t *testing.T) {
 
 	// Setup expectations
 	console.EXPECT().Header().Times(1)
-	depMgr.EXPECT().GetDependencies().Return(deps, nil).Times(1)
+	console.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	depMgr.EXPECT().GetUpdatableDependencies().Return(deps, nil).Times(1)
 	depMgr.EXPECT().FilterDependencies(deps, false).Return(deps).Times(1)
-	console.EXPECT().PrintDependencies(deps, "Found 2 direct dependencies to update:").Times(1)
+	console.EXPECT().PrintDependencies(deps, "Found 2 direct dependencies with available updates:").Times(1)
 	console.EXPECT().Info("Updating dependencies...").Times(1)
 
 	// Progress calls for each dependency
@@ -321,9 +328,10 @@ func TestRunModTidyError(t *testing.T) {
 
 	// Setup expectations
 	console.EXPECT().Header().Times(1)
-	depMgr.EXPECT().GetDependencies().Return(deps, nil).Times(1)
+	console.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	depMgr.EXPECT().GetUpdatableDependencies().Return(deps, nil).Times(1)
 	depMgr.EXPECT().FilterDependencies(deps, false).Return(deps).Times(1)
-	console.EXPECT().PrintDependencies(deps, "Found 1 direct dependencies to update:").Times(1)
+	console.EXPECT().PrintDependencies(deps, "Found 1 direct dependencies with available updates:").Times(1)
 	console.EXPECT().Info("Updating dependencies...").Times(1)
 	console.EXPECT().Progress("Updating %s... (%d/%d)", "github.com/gin-gonic/gin", 1, 1).Times(1)
 
@@ -342,6 +350,51 @@ func TestRunModTidyError(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "go mod tidy failed")
+}
+
+// New test for testing the updated case with --all flag
+func TestRunNoDirectDependenciesWithAllFlag(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	cfg := &config.Config{All: true}
+	console := mocks.NewMockConsole(ctrl)
+	depMgr := mocks.NewMockManager(ctrl)
+	sel := mocks.NewMockSelector(ctrl)
+	upd := mocks.NewMockUpdater(ctrl)
+
+	deps := []dependency.Dependency{
+		{Path: "golang.org/x/crypto", Version: "v0.14.0", Indirect: true},
+	}
+
+	// Setup expectations
+	console.EXPECT().Header().Times(1)
+	console.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	depMgr.EXPECT().GetUpdatableDependencies().Return(deps, nil).Times(1)
+	depMgr.EXPECT().FilterDependencies(deps, true).Return(deps).Times(1)
+	console.EXPECT().PrintDependencies(deps, "Found 1 all dependencies with available updates:").Times(1)
+	console.EXPECT().Info("Updating dependencies...").Times(1)
+
+	// Progress and update
+	console.EXPECT().Progress("Updating %s... (%d/%d)", "golang.org/x/crypto", 1, 1).Times(1)
+	upd.EXPECT().UpdateDependencies([]dependency.Dependency{deps[0]}, false).Return(updater.UpdateResult{Success: true}).Times(1)
+	console.EXPECT().Success("✓ Updated %s", "golang.org/x/crypto").Times(1)
+
+	// Final update
+	updateResult := updater.UpdateResult{Updated: deps, Success: true, Failed: []updater.UpdateError{}}
+	upd.EXPECT().UpdateDependencies(deps, false).Return(updateResult).Times(1)
+	console.EXPECT().PrintUpdateResult(1, 1, false).Times(1)
+
+	// Mod tidy
+	console.EXPECT().Info("Running go mod tidy...").Times(1)
+	upd.EXPECT().RunModTidy(false).Return(nil).Times(1)
+	console.EXPECT().Success("✓ go mod tidy completed").Times(1)
+	console.EXPECT().Success("Dependency update completed!").Times(1)
+
+	app := New(cfg, console, depMgr, sel, upd)
+	err := app.Run()
+
+	assert.NoError(t, err)
 }
 
 func TestNew(t *testing.T) {

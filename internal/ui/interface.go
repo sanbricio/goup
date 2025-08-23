@@ -8,19 +8,22 @@ type Console interface {
 	Header()
 
 	// Info displays an informational message
-	Info(format string, args ...interface{})
+	Info(format string, args ...any)
 
 	// Success displays a success message
-	Success(format string, args ...interface{})
+	Success(format string, args ...any)
 
 	// Warning displays a warning message
-	Warning(format string, args ...interface{})
+	Warning(format string, args ...any)
+
+	// Debug displays a debug message (only when verbose is enabled)
+	Debug(format string, args ...any)
 
 	// Error displays an error message
-	Error(format string, args ...interface{})
+	Error(format string, args ...any)
 
 	// Progress displays a progress message
-	Progress(format string, args ...interface{})
+	Progress(format string, args ...any)
 
 	// ReadInput reads a line of input from the user with a prompt
 	ReadInput(prompt string) (string, error)

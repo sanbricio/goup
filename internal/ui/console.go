@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"goup/internal/config"
 	"goup/internal/dependency"
 )
 
@@ -24,13 +25,15 @@ const (
 // console implements the Console interface
 type console struct {
 	noColor bool
+	verbose bool
 	reader  *bufio.Reader
 }
 
 // NewConsole creates a new console UI
-func NewConsole(noColor bool) Console {
+func NewConsole(cfg *config.Config) Console {
 	return &console{
-		noColor: noColor,
+		noColor: cfg.NoColor,
+		verbose: cfg.Verbose,
 		reader:  bufio.NewReader(os.Stdin),
 	}
 }
@@ -46,13 +49,13 @@ func (c *console) Header() {
 }
 
 // Info displays an informational message
-func (c *console) Info(format string, args ...interface{}) {
+func (c *console) Info(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
 	fmt.Printf("[INFO] %s\n", message)
 }
 
 // Success displays a success message
-func (c *console) Success(format string, args ...interface{}) {
+func (c *console) Success(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
 	if c.noColor {
 		fmt.Printf("[SUCCESS] %s\n", message)
@@ -62,7 +65,7 @@ func (c *console) Success(format string, args ...interface{}) {
 }
 
 // Warning displays a warning message
-func (c *console) Warning(format string, args ...interface{}) {
+func (c *console) Warning(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
 	if c.noColor {
 		fmt.Printf("[WARNING] %s\n", message)
@@ -72,7 +75,7 @@ func (c *console) Warning(format string, args ...interface{}) {
 }
 
 // Error displays an error message
-func (c *console) Error(format string, args ...interface{}) {
+func (c *console) Error(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
 	if c.noColor {
 		fmt.Printf("[ERROR] %s\n", message)
@@ -81,8 +84,19 @@ func (c *console) Error(format string, args ...interface{}) {
 	}
 }
 
+func (c *console) Debug(format string, args ...any) {
+	if c.verbose {
+		message := fmt.Sprintf(format, args...)
+		if c.noColor {
+			fmt.Printf("[DEBUG] %s\n", message)
+		} else {
+			fmt.Printf("%s[DEBUG]%s %s\n", ColorPurple, ColorReset, message)
+		}
+	}
+}
+
 // Progress displays a progress message
-func (c *console) Progress(format string, args ...interface{}) {
+func (c *console) Progress(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
 	if c.noColor {
 		fmt.Printf("[PROGRESS] %s\n", message)

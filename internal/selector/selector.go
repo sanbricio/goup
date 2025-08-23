@@ -33,7 +33,7 @@ func (s *interactiveSelector) Select(deps []dependency.Dependency, includeIndire
 		typeStr = "all"
 	}
 
-	s.ui.Info("Found %d %s dependencies available for update:", len(deps), typeStr)
+	s.ui.Info("Found %d %s dependencies with available updates:", len(deps), typeStr)
 	s.ui.PrintDependencies(deps, "")
 
 	s.showSelectionHelp()

@@ -40,29 +40,56 @@ func New(
 func (a *App) Run() error {
 	a.console.Header()
 
-	// Get all dependencies
-	allDeps, err := a.depMgr.GetDependencies()
-	if err != nil {
-		return fmt.Errorf("failed to read dependencies: %w", err)
+	// Debug: Print configuration
+	if a.config.Verbose {
+		if a.config.DryRun {
+			a.console.Debug("DryRun mode enabled")
+		}
+		if a.config.Selective {
+			a.console.Debug("Selective mode enabled")
+		}
+		if a.config.Interactive {
+			a.console.Debug("Interactive mode enabled")
+		}
+		if a.config.All {
+			a.console.Debug("All dependencies mode enabled")
+		}
 	}
 
-	if len(allDeps) == 0 {
-		a.console.Info("No dependencies found to update")
+	// Get only updatable dependencies
+	allUpdatableDeps, err := a.depMgr.GetUpdatableDependencies()
+	if err != nil {
+		return fmt.Errorf("failed to check for dependency updates: %w", err)
+	}
+
+	if len(allUpdatableDeps) == 0 {
+		a.console.Info("All dependencies are up to date! 🎉")
 		return nil
 	}
 
-	// Filter dependencies based on configuration
-	filteredDeps := a.depMgr.FilterDependencies(allDeps, a.config.ShouldIncludeIndirect())
+	// Filter dependencies based on configuration (direct vs all)
+	filteredDeps := a.depMgr.FilterDependencies(allUpdatableDeps, a.config.ShouldIncludeIndirect())
 	if len(filteredDeps) == 0 {
-		a.console.Info("No direct dependencies found to update")
+		if a.config.ShouldIncludeIndirect() {
+			a.console.Info("All dependencies are up to date! 🎉")
+		} else {
+			a.console.Info("All direct dependencies are up to date! 🎉")
+			if len(allUpdatableDeps) > 0 {
+				indirectCount := len(allUpdatableDeps) - len(filteredDeps)
+				a.console.Info("(%d indirect dependencies have updates available, use --all to include them)", indirectCount)
+			}
+		}
 		return nil
 	}
 
 	// Select dependencies to update
+	a.console.Debug("Selecting dependencies to update...")
 	selectedDeps, err := a.selectDependencies(filteredDeps)
 	if err != nil {
 		return fmt.Errorf("dependency selection failed: %w", err)
 	}
+
+	a.console.Debug("Selected %d dependencies for update", len(selectedDeps))
 
 	if len(selectedDeps) == 0 {
 		a.console.Info("No dependencies selected for update")
@@ -71,6 +98,7 @@ func (a *App) Run() error {
 
 	// Handle dry run mode
 	if a.config.DryRun {
+		a.console.Debug("Handling dry run")
 		a.handleDryRun(selectedDeps)
 		return nil
 	}
@@ -89,17 +117,18 @@ func (a *App) Run() error {
 
 func (a *App) selectDependencies(deps []dependency.Dependency) ([]dependency.Dependency, error) {
 	if !a.config.Selective {
-		// Show dependencies that will be updated
+		// Non-selective mode: show dependencies that will be updated and return all
 		typeStr := "direct"
 		if a.config.All {
 			typeStr = "all"
 		}
-		title := fmt.Sprintf("Found %d %s dependencies to update:", len(deps), typeStr)
+		title := fmt.Sprintf("Found %d %s dependencies with available updates:", len(deps), typeStr)
 		a.console.PrintDependencies(deps, title)
 		return deps, nil
 	}
 
-	// Use interactive selection
+	// Selective mode: use interactive selection
+	// The selector should handle the display and interaction
 	result := a.selector.Select(deps, a.config.ShouldIncludeIndirect())
 	if result.Error != nil {
 		return nil, result.Error
@@ -122,7 +151,6 @@ func (a *App) handleDryRun(deps []dependency.Dependency) {
 
 func (a *App) performUpdate(deps []dependency.Dependency) error {
 	a.console.Info("Updating dependencies...")
-	fmt.Println()
 
 	// Update dependencies with progress reporting
 	result := a.updateWithProgress(deps)
