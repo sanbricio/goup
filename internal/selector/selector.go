@@ -46,17 +46,20 @@ func (s *interactiveSelector) Select(deps []dependency.Dependency, includeIndire
 
 		input = strings.TrimSpace(input)
 		if input == "" {
+			s.ui.Info("Selection cancelled by user")
 			return SelectionResult{Cancelled: true}
 		}
 
 		selected, err := s.parser.ParseSelection(input, deps)
 		if err != nil {
 			s.ui.Error("Invalid selection: %v", err)
+			s.ui.Info("Please try again or press Enter to cancel")
 			continue
 		}
 
 		if len(selected) == 0 {
 			s.ui.Error("No dependencies matched your selection")
+			s.ui.Info("Please check your input and try again")
 			continue
 		}
 
@@ -74,10 +77,17 @@ func (s *interactiveSelector) Select(deps []dependency.Dependency, includeIndire
 
 func (s *interactiveSelector) showSelectionHelp() {
 	s.ui.Info("Selection options:")
-	fmt.Println("  • Enter numbers (e.g., 1,3,5 or 1-3 or 1,3-5)")
-	fmt.Println("  • Enter 'all' to select all dependencies")
-	fmt.Println("  • Enter package names or patterns (e.g., 'github.com/gin*')")
-	fmt.Println("  • Press Enter without input to cancel")
+
+	helpLines := []string{
+		"  📝 Enter numbers (e.g., 1,3,5 or 1-3 or 1,3-5)",
+		"  🔄 Enter 'all' to select all dependencies",
+		"  🔍 Enter package names or patterns (e.g., 'github.com/gin*')",
+		"  ❌ Press Enter without input to cancel",
+	}
+
+	for _, line := range helpLines {
+		fmt.Println(line)
+	}
 	fmt.Println()
 }
 
