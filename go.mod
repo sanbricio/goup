@@ -1,9 +1,9 @@
 module goup
 
-go 1.24
+go 1.25
 
 require (
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.uber.org/mock v0.6.0
 	golang.org/x/mod v0.27.0
 )

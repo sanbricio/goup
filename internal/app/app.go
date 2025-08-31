@@ -173,19 +173,33 @@ func (a *App) performUpdate(deps []dependency.Dependency) error {
 }
 
 func (a *App) updateWithProgress(deps []dependency.Dependency) updater.UpdateResult {
+	var allResults []updater.UpdateResult
+
 	for i, dep := range deps {
-		a.console.Progress("Updating %s... (%d/%d)", dep.Path, i+1, len(deps))
+		a.console.ProgressBar(i, len(deps), fmt.Sprintf("Processing %s", dep.Path))
 
 		// Update individual dependency
 		singleResult := a.updater.UpdateDependencies([]dependency.Dependency{dep}, a.config.Verbose)
+		allResults = append(allResults, singleResult)
 
-		if singleResult.Success {
-			a.console.Success("✓ Updated %s", dep.Path)
+		a.console.ProgressBar(i+1, len(deps), fmt.Sprintf("✓ %s", dep.Path))
+	}
+
+	finalResult := updater.UpdateResult{
+		Updated: make([]dependency.Dependency, 0),
+		Failed:  make([]updater.UpdateError, 0),
+		Success: true,
+	}
+
+	for _, result := range allResults {
+		finalResult.Updated = append(finalResult.Updated, result.Updated...)
+		finalResult.Failed = append(finalResult.Failed, result.Failed...)
+		if !result.Success {
+			finalResult.Success = false
 		}
 	}
 
-	// Get final result for all dependencies
-	return a.updater.UpdateDependencies(deps, a.config.Verbose)
+	return finalResult
 }
 
 func (a *App) runModTidy() error {

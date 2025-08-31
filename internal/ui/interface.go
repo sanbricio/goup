@@ -25,6 +25,9 @@ type Console interface {
 	// Progress displays a progress message
 	Progress(format string, args ...any)
 
+	// ProgressBar displays a progress bar with current progress
+	ProgressBar(current, total int, message string)
+
 	// ReadInput reads a line of input from the user with a prompt
 	ReadInput(prompt string) (string, error)
 

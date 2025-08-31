@@ -56,6 +56,11 @@ const (
 	SymbolBullet   = "•"
 	SymbolDivider  = "─"
 
+	// Progress bar symbols
+	ProgressBarFilled = "█"
+	ProgressBarEmpty  = "░"
+	ProgressBarEdge   = "▌"
+
 	// Table characters
 	TableTopLeft     = "┌"
 	TableTopRight    = "┐"
@@ -121,6 +126,68 @@ func (c *console) Debug(format string, args ...any) {
 func (c *console) Progress(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
 	c.printMessage(SymbolProgress, "PROGRESS", Info, message)
+}
+
+// ProgressBar shows a visual progress bar
+func (c *console) ProgressBar(current, total int, message string) {
+	if c.noColor {
+		c.printSimpleProgressBar(current, total, message)
+		return
+	}
+	c.printStyledProgressBar(current, total, message)
+}
+
+func (c *console) printSimpleProgressBar(current, total int, message string) {
+	percentage := float64(current) / float64(total) * 100
+	barWidth := 50
+	filled := int(float64(barWidth) * float64(current) / float64(total))
+
+	bar := strings.Repeat("=", filled) + strings.Repeat("-", barWidth-filled)
+
+	fmt.Printf("\r[%s] %3.0f%% (%d/%d) %s",
+		bar, percentage, current, total, message)
+
+	if current == total {
+		fmt.Println() // New line when complete
+	}
+}
+
+func (c *console) printStyledProgressBar(current, total int, message string) {
+	percentage := float64(current) / float64(total) * 100
+	barWidth := 40
+	filled := int(float64(barWidth) * float64(current) / float64(total))
+
+	// Create the progress bar
+	var bar string
+	for i := 0; i < barWidth; i++ {
+		if i < filled {
+			bar += ProgressBarFilled
+		} else if i == filled && percentage < 100 {
+			bar += ProgressBarEdge
+		} else {
+			bar += ProgressBarEmpty
+		}
+	}
+
+	// Color the bar
+	progressColor := Primary
+	if current == total {
+		progressColor = Success
+	}
+
+	// Print the progress bar with colors
+	fmt.Printf("\r %s%s▍%s%s%s%s%s▍%s %s%3.0f%%%s %s(%d/%d)%s %s%s%s",
+		progressColor, Bold, Reset,
+		progressColor, bar, Reset,
+		progressColor, Reset,
+		progressColor, percentage, Reset,
+		Secondary, current, total, Reset,
+		Accent, message, Reset)
+
+	if current == total {
+		fmt.Println() // New line when complete
+		c.Success("✓ All dependencies processed!")
+	}
 }
 
 func (c *console) ReadInput(prompt string) (string, error) {
