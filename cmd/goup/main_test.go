@@ -104,12 +104,12 @@ func TestParseFlags(t *testing.T) {
 	})
 
 	t.Run("parse flags with directory", func(t *testing.T) {
-		args := []string{"goup", "--dry-run", "--verbose", "/path/to/project"}
+		args := []string{"goup", "--list", "--verbose", "/path/to/project"}
 
 		config, targetDir := parseFlagsWithArgs(args)
 
 		assert.Equal(t, "/path/to/project", targetDir)
-		assert.True(t, config.DryRun)
+		assert.True(t, config.List)
 		assert.True(t, config.Verbose)
 	})
 
@@ -125,7 +125,7 @@ func TestParseFlags(t *testing.T) {
 	t.Run("parse all flags", func(t *testing.T) {
 		args := []string{
 			"goup",
-			"--dry-run",
+			"--list",
 			"--interactive",
 			"--verbose",
 			"--no-color",
@@ -136,7 +136,7 @@ func TestParseFlags(t *testing.T) {
 		config, targetDir := parseFlagsWithArgs(args)
 
 		assert.Empty(t, targetDir)
-		assert.True(t, config.DryRun)
+		assert.True(t, config.List)
 		assert.True(t, config.Interactive)
 		assert.True(t, config.Verbose)
 		assert.True(t, config.NoColor)
@@ -147,24 +147,24 @@ func TestParseFlags(t *testing.T) {
 	t.Run("flags after directory are ignored", func(t *testing.T) {
 		// This documents the behavior that flags after non-flag arguments are ignored
 		// This is standard Go flag package behavior
-		args := []string{"goup", "--dry-run", "/some/path", "--verbose"}
+		args := []string{"goup", "--list", "/some/path", "--verbose"}
 
 		config, targetDir := parseFlagsWithArgs(args)
 
 		assert.Equal(t, "/some/path", targetDir)
-		assert.True(t, config.DryRun)
+		assert.True(t, config.List)
 		assert.False(t, config.Verbose) // --verbose is ignored because it comes after the directory
 	})
 
 	t.Run("flags before directory only", func(t *testing.T) {
 		// Note: Go's flag package stops parsing flags after the first non-flag argument
 		// So flags after the directory path won't be parsed
-		args := []string{"goup", "--dry-run", "--verbose", "/some/path"}
+		args := []string{"goup", "--list", "--verbose", "/some/path"}
 
 		config, targetDir := parseFlagsWithArgs(args)
 
 		assert.Equal(t, "/some/path", targetDir)
-		assert.True(t, config.DryRun)
+		assert.True(t, config.List)
 		assert.True(t, config.Verbose)
 	})
 
@@ -175,7 +175,7 @@ func TestParseFlags(t *testing.T) {
 
 		assert.Empty(t, targetDir)
 		assert.NotNil(t, config)
-		assert.False(t, config.DryRun)
+		assert.False(t, config.List)
 		assert.False(t, config.Interactive)
 		assert.False(t, config.Verbose)
 		assert.False(t, config.NoColor)

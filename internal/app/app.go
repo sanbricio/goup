@@ -42,8 +42,8 @@ func (a *App) Run() error {
 
 	// Debug: Print configuration
 	if a.config.Verbose {
-		if a.config.DryRun {
-			a.console.Debug("DryRun mode enabled")
+		if a.config.List {
+			a.console.Debug("List mode enabled")
 		}
 		if a.config.Selective {
 			a.console.Debug("Selective mode enabled")
@@ -59,7 +59,7 @@ func (a *App) Run() error {
 	// Get only updatable dependencies
 	allUpdatableDeps, err := a.depMgr.GetUpdatableDependencies()
 	if err != nil {
-		return fmt.Errorf("failed to check for dependency updates: %w", err)
+		return err
 	}
 
 	if len(allUpdatableDeps) == 0 {
@@ -96,10 +96,8 @@ func (a *App) Run() error {
 		return nil
 	}
 
-	// Handle dry run mode
-	if a.config.DryRun {
-		a.console.Debug("Handling dry run")
-		a.handleDryRun(selectedDeps)
+	// Handle List mode
+	if a.config.List {
 		return nil
 	}
 
@@ -111,7 +109,7 @@ func (a *App) Run() error {
 		}
 	}
 
-	// Perform the update
+	// Perform the update - handle failures gracefully
 	return a.performUpdate(selectedDeps)
 }
 
@@ -128,7 +126,6 @@ func (a *App) selectDependencies(deps []dependency.Dependency) ([]dependency.Dep
 	}
 
 	// Selective mode: use interactive selection
-	// The selector should handle the display and interaction
 	result := a.selector.Select(deps, a.config.ShouldIncludeIndirect())
 	if result.Error != nil {
 		return nil, result.Error
@@ -141,14 +138,6 @@ func (a *App) selectDependencies(deps []dependency.Dependency) ([]dependency.Dep
 	return result.Selected, nil
 }
 
-func (a *App) handleDryRun(deps []dependency.Dependency) {
-	a.console.Warning("Dry run mode - no actual updates will be performed")
-	if a.config.Selective {
-		title := fmt.Sprintf("Would update %d selected dependencies:", len(deps))
-		a.console.PrintDependencies(deps, title)
-	}
-}
-
 func (a *App) performUpdate(deps []dependency.Dependency) error {
 	a.console.Info("Updating dependencies...")
 
@@ -158,18 +147,30 @@ func (a *App) performUpdate(deps []dependency.Dependency) error {
 	// Report results
 	a.console.PrintUpdateResult(len(result.Updated), len(deps), len(result.Failed) > 0)
 
-	// Show individual errors if any
+	// Show individual errors if any - but don't fail the whole process
 	for _, failure := range result.Failed {
 		a.console.Error("Failed to update %s: %v", failure.Dependency.Path, failure.Error)
 	}
 
-	// Run go mod tidy
+	// Run go mod tidy - even if some updates failed
 	if err := a.runModTidy(); err != nil {
-		return fmt.Errorf("go mod tidy failed: %w", err)
+		// Don't fail completely if mod tidy fails
+		a.console.Warning("go mod tidy failed: %v", err)
+	} else {
+		a.console.Success("go mod tidy completed")
 	}
 
-	a.console.Success("Dependency update completed!")
-	return nil
+	// Show final status
+	if len(result.Updated) > 0 {
+		a.console.Success("Dependency update completed!")
+		if len(result.Failed) > 0 {
+			a.console.Info("Successfully updated %d out of %d dependencies", len(result.Updated), len(deps))
+		}
+	} else if len(result.Failed) > 0 {
+		a.console.Warning("No dependencies were successfully updated due to errors")
+	}
+
+	return nil // Don't fail the whole process for individual dependency issues
 }
 
 func (a *App) updateWithProgress(deps []dependency.Dependency) updater.UpdateResult {
@@ -178,11 +179,16 @@ func (a *App) updateWithProgress(deps []dependency.Dependency) updater.UpdateRes
 	for i, dep := range deps {
 		a.console.ProgressBar(i, len(deps), fmt.Sprintf("Processing %s", dep.Path))
 
-		// Update individual dependency
+		// Update individual dependency - errors are captured in result
 		singleResult := a.updater.UpdateDependencies([]dependency.Dependency{dep}, a.config.Verbose)
 		allResults = append(allResults, singleResult)
 
-		a.console.ProgressBar(i+1, len(deps), fmt.Sprintf("✓ %s", dep.Path))
+		// Show progress with success/failure indicator
+		if len(singleResult.Failed) > 0 {
+			a.console.ProgressBar(i+1, len(deps), fmt.Sprintf("✗ %s", dep.Path))
+		} else {
+			a.console.ProgressBar(i+1, len(deps), fmt.Sprintf("✓ %s", dep.Path))
+		}
 	}
 
 	finalResult := updater.UpdateResult{
@@ -204,12 +210,5 @@ func (a *App) updateWithProgress(deps []dependency.Dependency) updater.UpdateRes
 
 func (a *App) runModTidy() error {
 	a.console.Info("Running go mod tidy...")
-
-	if err := a.updater.RunModTidy(a.config.Verbose); err != nil {
-		return err
-	}
-
-	a.console.Success("✓ go mod tidy completed")
-	fmt.Println()
-	return nil
+	return a.updater.RunModTidy(a.config.Verbose)
 }

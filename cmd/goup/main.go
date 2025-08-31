@@ -50,7 +50,7 @@ func parseFlagsWithArgs(args []string) (*config.Config, string) {
 	// Create a new FlagSet to avoid global state issues in tests
 	fs := flag.NewFlagSet(args[0], flag.ExitOnError)
 
-	fs.BoolVar(&cfg.DryRun, "dry-run", false, "Show what would be updated without making changes")
+	fs.BoolVar(&cfg.List, "list", false, "List all upgradeable dependencies")
 	fs.BoolVar(&cfg.Interactive, "interactive", false, "Ask for confirmation before updating")
 	fs.BoolVar(&cfg.Verbose, "verbose", false, "Show detailed output")
 	fs.BoolVar(&cfg.NoColor, "no-color", false, "Disable colored output")
@@ -65,11 +65,10 @@ func parseFlagsWithArgs(args []string) (*config.Config, string) {
 		fmt.Fprintf(os.Stderr, "Options:\n")
 		fs.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\nExamples:\n")
-		fmt.Fprintf(os.Stderr, "  %s                       # Update dependencies in current directory\n", args[0])
-		fmt.Fprintf(os.Stderr, "  %s /path/to/project      # Update dependencies in specified directory\n", args[0])
-		fmt.Fprintf(os.Stderr, "  %s --select              # Interactively select dependencies\n", args[0])
-		fmt.Fprintf(os.Stderr, "  %s --select --all        # Select from all dependencies (including indirect)\n", args[0])
-		fmt.Fprintf(os.Stderr, "  %s --select --dry-run    # Preview selective updates\n", args[0])
+		fmt.Fprintf(os.Stderr, "  %s                       		# Update direct dependencies in current directory\n", args[0])
+		fmt.Fprintf(os.Stderr, "  %s /path/to/project      		# Update direct dependencies in specified directory\n", args[0])
+		fmt.Fprintf(os.Stderr, "  %s /path/to/project --all     # Update direct dependencies in specified directory\n", args[0])
+		fmt.Fprintf(os.Stderr, "  %s --select              		# Interactively select dependencies to update\n", args[0])
 	}
 
 	// Parse the arguments (skip the program name)

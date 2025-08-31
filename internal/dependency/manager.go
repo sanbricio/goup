@@ -52,9 +52,7 @@ func (m *manager) GetDependencies() ([]Dependency, error) {
 	}
 
 	// Sort dependencies alphabetically for consistent output
-	sort.Slice(deps, func(i, j int) bool {
-		return deps[i].Path < deps[j].Path
-	})
+	m.sortDependencies(deps)
 
 	return deps, nil
 }
@@ -74,20 +72,16 @@ func (m *manager) FilterDependencies(deps []Dependency, includeIndirect bool) []
 	return filtered
 }
 
-// GetUpdatableDependencies returns only dependencies that have updates available
+// GetUpdatableDependencies returns ONLY dependencies that have updates available
 func (m *manager) GetUpdatableDependencies() ([]Dependency, error) {
-	// Use 'go list -u -m all' to get ALL dependencies (direct and indirect) with their update info
-	cmd := exec.Command("go", "list", "-u", "-m", "-json", "all")
-	output, err := cmd.Output()
+	// Use 'go list -u -m all' to get ALL dependencies with their update info
+	out, err := exec.Command("go", "list", "-u", "-m", "-json", "all").CombinedOutput()
 	if err != nil {
-		// If the command fails, fall back to reading from go.mod
-		return m.GetDependencies()
+		return nil, fmt.Errorf("failed to check for updates: %v\noutput:\n%s", err, string(out))
 	}
 
-	var allDeps []Dependency
-	updatableMap := make(map[string]bool)
-
-	decoder := json.NewDecoder(strings.NewReader(string(output)))
+	var updatableDeps []Dependency
+	decoder := json.NewDecoder(strings.NewReader(string(out)))
 
 	for decoder.More() {
 		var module struct {
@@ -110,38 +104,40 @@ func (m *manager) GetUpdatableDependencies() ([]Dependency, error) {
 			continue
 		}
 
-		// Skip modules without a version (usually means they're local or replaced)
+		// Skip modules without a version
 		if module.Version == "" {
 			continue
 		}
 
-		// Create dependency object
-		dep := Dependency{
-			Path:     module.Path,
-			Version:  module.Version,
-			Indirect: module.Indirect,
-		}
-
-		allDeps = append(allDeps, dep)
-
-		// If Update field is present, this dependency has an update available
+		// ONLY add dependencies that have updates available
 		if module.Update != nil {
-			updatableMap[module.Path] = true
+			dep := Dependency{
+				Path:       module.Path,
+				Version:    module.Version,
+				NewVersion: module.Update.Version,
+				Indirect:   module.Indirect,
+				HasUpdate:  true,
+			}
+			updatableDeps = append(updatableDeps, dep)
 		}
 	}
 
-	// Filter to only include dependencies with updates
-	var updatable []Dependency
-	for _, dep := range allDeps {
-		if updatableMap[dep.Path] {
-			updatable = append(updatable, dep)
-		}
-	}
+	// Sort dependencies: first direct (alphabetically), then indirect (alphabetically)
+	m.sortDependencies(updatableDeps)
 
-	// Sort dependencies alphabetically for consistent output
-	sort.Slice(updatable, func(i, j int) bool {
-		return updatable[i].Path < updatable[j].Path
+	return updatableDeps, nil
+}
+
+func (m *manager) sortDependencies(deps []Dependency) {
+	sort.Slice(deps, func(i, j int) bool {
+		depA, depB := deps[i], deps[j]
+
+		// If one is direct and the other is indirect, direct comes first
+		if depA.Indirect != depB.Indirect {
+			return !depA.Indirect // !false = true (direct first), !true = false (indirect second)
+		}
+
+		// If both are the same type (both direct or both indirect), sort alphabetically
+		return depA.Path < depB.Path
 	})
-
-	return updatable, nil
 }

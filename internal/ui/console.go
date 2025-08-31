@@ -128,7 +128,7 @@ func (c *console) Progress(format string, args ...any) {
 	c.printMessage(SymbolProgress, "PROGRESS", Info, message)
 }
 
-// ProgressBar shows a visual progress bar
+// ProgressBar shows a visual progress bar - ORIGINAL VERSION MAINTAINED
 func (c *console) ProgressBar(current, total int, message string) {
 	if c.noColor {
 		c.printSimpleProgressBar(current, total, message)
@@ -237,15 +237,16 @@ func (c *console) PrintDependencies(deps []dependency.Dependency, title string) 
 	// Calculate optimal column widths
 	maxPathWidth := c.calculateMaxPathWidth(deps)
 	indexWidth := c.calculateIndexWidth(len(deps))
-	versionWidth := 15 // Fixed width for versions
-	typeWidth := 8     // Fixed width for type
+	currentVersionWidth := 15 // Width for current version
+	newVersionWidth := 15     // Width for new version
+	typeWidth := 8            // Fixed width for type
 
 	if c.noColor {
-		c.printSimpleTable(deps, indexWidth, maxPathWidth, versionWidth, typeWidth)
+		c.printSimpleTable(deps, indexWidth, maxPathWidth, currentVersionWidth, newVersionWidth, typeWidth)
 		return
 	}
 
-	c.printStyledTable(deps, indexWidth, maxPathWidth, versionWidth, typeWidth)
+	c.printStyledTable(deps, indexWidth, maxPathWidth, currentVersionWidth, newVersionWidth, typeWidth)
 }
 
 func (c *console) calculateMaxPathWidth(deps []dependency.Dependency) int {
@@ -256,8 +257,8 @@ func (c *console) calculateMaxPathWidth(deps []dependency.Dependency) int {
 		}
 	}
 	// Cap the maximum width to keep table readable
-	if maxWidth > 60 {
-		maxWidth = 60
+	if maxWidth > 50 {
+		maxWidth = 50
 	}
 	return maxWidth
 }
@@ -267,52 +268,58 @@ func (c *console) calculateIndexWidth(total int) int {
 	return len(totalStr)
 }
 
-func (c *console) printSimpleTable(deps []dependency.Dependency, indexWidth, pathWidth, versionWidth, typeWidth int) {
-	// Header
-	fmt.Printf(" %-*s │ %-*s │ %-*s │ %-*s\n",
+func (c *console) printSimpleTable(deps []dependency.Dependency, indexWidth, pathWidth, currentVersionWidth, newVersionWidth, typeWidth int) {
+	// Header with separate version columns
+	fmt.Printf(" %-*s │ %-*s │ %-*s │ %-*s │ %-*s\n",
 		indexWidth, "#",
 		pathWidth, "Package",
-		versionWidth, "Version",
+		currentVersionWidth, "Current Version",
+		newVersionWidth, "New Version",
 		typeWidth, "Type")
 
 	// Separator
-	fmt.Printf("%s┼%s┼%s┼%s\n",
+	fmt.Printf("%s┼%s┼%s┼%s┼%s\n",
 		strings.Repeat("─", indexWidth+2),
 		strings.Repeat("─", pathWidth+2),
-		strings.Repeat("─", versionWidth+2),
+		strings.Repeat("─", currentVersionWidth+2),
+		strings.Repeat("─", newVersionWidth+2),
 		strings.Repeat("─", typeWidth+2))
 
 	// Rows
 	for i, dep := range deps {
-		c.printSimpleDependencyRow(i+1, len(deps), dep, indexWidth, pathWidth, versionWidth, typeWidth)
+		c.printSimpleDependencyRow(i+1, len(deps), dep, indexWidth, pathWidth, currentVersionWidth, newVersionWidth, typeWidth)
 	}
 
 	// Bottom border
-	fmt.Printf("%s┴%s┴%s┴%s\n",
+	fmt.Printf("%s┴%s┴%s┴%s┴%s\n",
 		strings.Repeat("─", indexWidth+2),
 		strings.Repeat("─", pathWidth+2),
-		strings.Repeat("─", versionWidth+2),
+		strings.Repeat("─", currentVersionWidth+2),
+		strings.Repeat("─", newVersionWidth+2),
 		strings.Repeat("─", typeWidth+2))
 	fmt.Println()
 }
 
-func (c *console) printStyledTable(deps []dependency.Dependency, indexWidth, pathWidth, versionWidth, typeWidth int) {
+func (c *console) printStyledTable(deps []dependency.Dependency, indexWidth, pathWidth, currentVersionWidth, newVersionWidth, typeWidth int) {
 	// Top border
 	fmt.Printf("   %s%s%s\n", Secondary,
 		TableTopLeft+strings.Repeat(TableHorizontal, indexWidth+2)+
 			TableTeeDown+strings.Repeat(TableHorizontal, pathWidth+2)+
-			TableTeeDown+strings.Repeat(TableHorizontal, versionWidth+2)+
+			TableTeeDown+strings.Repeat(TableHorizontal, currentVersionWidth+2)+
+			TableTeeDown+strings.Repeat(TableHorizontal, newVersionWidth+2)+
 			TableTeeDown+strings.Repeat(TableHorizontal, typeWidth+2)+
 			TableTopRight, Reset)
 
-	// Header
-	fmt.Printf("   %s%s%s %s%s%-*s%s %s%s%s %s%s%-*s%s %s%s%s %s%s%-*s%s %s%s%s %s%s%-*s%s %s%s%s\n",
+	// Header with separate version columns
+	fmt.Printf("   %s%s%s %s%s%-*s%s %s%s%s %s%s%-*s%s %s%s%s %s%s%-*s%s %s%s%s %s%s%-*s%s %s%s%s %s%s%-*s%s %s%s%s\n",
 		Secondary, TableVertical, Reset,
 		Primary, Bold, indexWidth, "#", Reset,
 		Secondary, TableVertical, Reset,
 		Primary, Bold, pathWidth, "Package", Reset,
 		Secondary, TableVertical, Reset,
-		Primary, Bold, versionWidth, "Version", Reset,
+		Primary, Bold, currentVersionWidth, "Current Version", Reset,
+		Secondary, TableVertical, Reset,
+		Primary, Bold, newVersionWidth, "New Version", Reset,
 		Secondary, TableVertical, Reset,
 		Primary, Bold, typeWidth, "Type", Reset,
 		Secondary, TableVertical, Reset)
@@ -321,20 +328,22 @@ func (c *console) printStyledTable(deps []dependency.Dependency, indexWidth, pat
 	fmt.Printf("   %s%s%s\n", Secondary,
 		TableTeeRight+strings.Repeat(TableHorizontal, indexWidth+2)+
 			TableCross+strings.Repeat(TableHorizontal, pathWidth+2)+
-			TableCross+strings.Repeat(TableHorizontal, versionWidth+2)+
+			TableCross+strings.Repeat(TableHorizontal, currentVersionWidth+2)+
+			TableCross+strings.Repeat(TableHorizontal, newVersionWidth+2)+
 			TableCross+strings.Repeat(TableHorizontal, typeWidth+2)+
 			TableTeeLeft, Reset)
 
 	// Rows
 	for i, dep := range deps {
-		c.printStyledDependencyRow(i+1, len(deps), dep, indexWidth, pathWidth, versionWidth, typeWidth)
+		c.printStyledDependencyRow(i+1, len(deps), dep, indexWidth, pathWidth, currentVersionWidth, newVersionWidth, typeWidth)
 
 		// Row separator (except for last row)
 		if i < len(deps)-1 {
 			fmt.Printf("   %s%s%s\n", Secondary,
 				TableTeeRight+strings.Repeat(TableDotted, indexWidth+2)+
 					TableCross+strings.Repeat(TableDotted, pathWidth+2)+
-					TableCross+strings.Repeat(TableDotted, versionWidth+2)+
+					TableCross+strings.Repeat(TableDotted, currentVersionWidth+2)+
+					TableCross+strings.Repeat(TableDotted, newVersionWidth+2)+
 					TableCross+strings.Repeat(TableDotted, typeWidth+2)+
 					TableTeeLeft, Reset)
 		}
@@ -344,33 +353,37 @@ func (c *console) printStyledTable(deps []dependency.Dependency, indexWidth, pat
 	fmt.Printf("   %s%s%s\n", Secondary,
 		TableBottomLeft+strings.Repeat(TableHorizontal, indexWidth+2)+
 			TableTeeUp+strings.Repeat(TableHorizontal, pathWidth+2)+
-			TableTeeUp+strings.Repeat(TableHorizontal, versionWidth+2)+
+			TableTeeUp+strings.Repeat(TableHorizontal, currentVersionWidth+2)+
+			TableTeeUp+strings.Repeat(TableHorizontal, newVersionWidth+2)+
 			TableTeeUp+strings.Repeat(TableHorizontal, typeWidth+2)+
 			TableBottomRight, Reset)
 	fmt.Println()
 }
 
-func (c *console) printSimpleDependencyRow(index, total int, dep dependency.Dependency, indexWidth, pathWidth, versionWidth, typeWidth int) {
+func (c *console) printSimpleDependencyRow(index, total int, dep dependency.Dependency, indexWidth, pathWidth, currentVersionWidth, newVersionWidth, typeWidth int) {
 	indexStr := fmt.Sprintf("%d/%d", index, total)
 	pathStr := c.truncateString(dep.Path, pathWidth)
-	versionStr := c.truncateString(dep.Version, versionWidth)
+	currentVersionStr := c.truncateString(dep.Version, currentVersionWidth)
+	newVersionStr := c.truncateString(dep.NewVersion, newVersionWidth)
 
 	typeStr := "direct"
 	if dep.Indirect {
 		typeStr = "indirect"
 	}
 
-	fmt.Printf(" %-*s │ %-*s │ %-*s │ %-*s\n",
+	fmt.Printf(" %-*s │ %-*s │ %-*s │ %-*s │ %-*s\n",
 		indexWidth, indexStr,
 		pathWidth, pathStr,
-		versionWidth, versionStr,
+		currentVersionWidth, currentVersionStr,
+		newVersionWidth, newVersionStr,
 		typeWidth, typeStr)
 }
 
-func (c *console) printStyledDependencyRow(index, total int, dep dependency.Dependency, indexWidth, pathWidth, versionWidth, typeWidth int) {
+func (c *console) printStyledDependencyRow(index, total int, dep dependency.Dependency, indexWidth, pathWidth, currentVersionWidth, newVersionWidth, typeWidth int) {
 	indexStr := fmt.Sprintf("%d/%d", index, total)
 	pathStr := c.truncateString(dep.Path, pathWidth)
-	versionStr := c.truncateString(dep.Version, versionWidth)
+	currentVersionStr := c.truncateString(dep.Version, currentVersionWidth)
+	newVersionStr := c.truncateString(dep.NewVersion, newVersionWidth)
 
 	// Colors and symbols based on dependency type
 	var pathColor, typeColor, typeStr string
@@ -384,20 +397,23 @@ func (c *console) printStyledDependencyRow(index, total int, dep dependency.Depe
 		typeStr = "direct"
 	}
 
-	// Format each column separately to avoid printf complexity
+	// Format each column separately
 	indexCol := fmt.Sprintf("%-*s", indexWidth, indexStr)
 	pathCol := fmt.Sprintf("%-*s", pathWidth, pathStr)
-	versionCol := fmt.Sprintf("%-*s", versionWidth, versionStr)
+	currentVersionCol := fmt.Sprintf("%-*s", currentVersionWidth, currentVersionStr)
+	newVersionCol := fmt.Sprintf("%-*s", newVersionWidth, newVersionStr)
 	typeCol := fmt.Sprintf("%-*s", typeWidth, typeStr)
 
-	// Print the formatted row
-	fmt.Printf("   %s%s%s %s%s%s %s%s%s %s%s%s%s %s%s%s %s%s%s %s%s%s %s%s%s %s%s%s\n",
+	// Print the formatted row with separate version columns
+	fmt.Printf("   %s%s%s %s%s%s %s%s%s %s%s%s %s%s%s %s%s%s %s%s%s %s%s%s %s%s%s %s%s%s %s%s%s\n",
 		Secondary, TableVertical, Reset,
 		Secondary, indexCol, Reset,
 		Secondary, TableVertical, Reset,
-		pathColor, Bold, pathCol, Reset,
+		pathColor, pathCol, Reset,
 		Secondary, TableVertical, Reset,
-		Cyan, versionCol, Reset,
+		Cyan, currentVersionCol, Reset,
+		Secondary, TableVertical, Reset,
+		Success, newVersionCol, Reset,
 		Secondary, TableVertical, Reset,
 		typeColor, typeCol, Reset,
 		Secondary, TableVertical, Reset)

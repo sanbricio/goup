@@ -27,7 +27,7 @@ func NewGoUpdaterWithRunner(runner CommandRunner) Updater {
 	}
 }
 
-// UpdateDependencies updates the specified dependencies
+// UpdateDependencies updates the specified dependencies individually
 func (u *goUpdater) UpdateDependencies(deps []dependency.Dependency, verbose bool) UpdateResult {
 	result := UpdateResult{
 		Updated: make([]dependency.Dependency, 0),
@@ -35,11 +35,13 @@ func (u *goUpdater) UpdateDependencies(deps []dependency.Dependency, verbose boo
 	}
 
 	for _, dep := range deps {
+		// Try to update each dependency individually
+		// If one fails, add to Failed slice and continue with others
 		err := u.commandRunner.Run("go", []string{"get", "-u", dep.Path}, verbose)
 		if err != nil {
 			result.Failed = append(result.Failed, UpdateError{
 				Dependency: dep,
-				Error:      err,
+				Error:      err, // Keep original error for better reporting
 			})
 		} else {
 			result.Updated = append(result.Updated, dep)

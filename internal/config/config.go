@@ -2,7 +2,7 @@ package config
 
 // Config holds all configuration options for the application
 type Config struct {
-	DryRun      bool // Show what would be updated without making changes
+	List        bool // List all updateable dependencies
 	Interactive bool // Ask for confirmation before updating
 	Verbose     bool // Show detailed output
 	NoColor     bool // Disable colored output

@@ -7,7 +7,7 @@ A smart and user-friendly tool to update Go module dependencies with enhanced fe
 - 🎯 **Smart Updates**: Updates only direct dependencies by default (with option for all)
 - 🔍 **Selective Updates**: Choose exactly which dependencies to update interactively
 - 🎨 **Beautiful Output**: Colored console output with progress indicators
-- 🏃 **Dry Run Mode**: Preview what would be updated without making changes
+- 🏃 **List Mode**: Preview what dependencies can update
 - 🤝 **Interactive Mode**: Ask for confirmation before updating
 - 📝 **Verbose Logging**: Detailed output when needed
 - ✅ **Error Handling**: Robust error handling and reporting
@@ -57,8 +57,8 @@ make install
 # Update all direct dependencies
 goup
 
-# Show what would be updated (dry run)
-goup --dry-run
+# Show what dependencies can be updated 
+goup --list
 
 # Update with confirmation prompt
 goup --interactive
@@ -76,7 +76,7 @@ goup --select
 goup --select --all
 
 # Preview selective updates without making changes
-goup --select --dry-run
+goup --select
 
 # Combine with other options
 goup --select --verbose
@@ -99,7 +99,7 @@ goup --interactive --verbose --all
 | Flag | Description |
 |------|-------------|
 | `--select` | Interactively select which dependencies to update |
-| `--dry-run` | Show what would be updated without making changes |
+| `--list`  | Show what would be updated without making changes |
 | `--interactive` | Ask for confirmation before updating |
 | `--verbose` | Show detailed output during the update process |
 | `--no-color` | Disable colored console output |
@@ -110,7 +110,7 @@ goup --interactive --verbose --all
 
 ### Example 1: Safe Preview
 ```bash
-$ goup --dry-run
+$ goup --list
 === goup - Go Dependency Updater ===
 
 [INFO] Found 3 direct dependencies to update:
@@ -118,8 +118,6 @@ $ goup --dry-run
   1. github.com/gin-gonic/gin@v1.9.1
   2. github.com/golang-jwt/jwt/v4@v4.5.0
   3. golang.org/x/crypto@v0.14.0
-
-[WARNING] Dry run mode - no actual updates will be performed
 ```
 
 ### Example 2: Interactive Update

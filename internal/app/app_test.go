@@ -54,7 +54,7 @@ func TestRunGetDependenciesError(t *testing.T) {
 	err := app.Run()
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to check for dependency updates")
+	assert.Contains(t, err.Error(), "failed to read go.mod")
 }
 
 func TestRunNoDirectDependencies(t *testing.T) {
@@ -84,11 +84,11 @@ func TestRunNoDirectDependencies(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestRunDryRun(t *testing.T) {
+func TestRunList(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cfg := &config.Config{DryRun: true}
+	cfg := &config.Config{List: true}
 	console := mocks.NewMockConsole(ctrl)
 	depMgr := mocks.NewMockManager(ctrl)
 	sel := mocks.NewMockSelector(ctrl)
@@ -104,7 +104,6 @@ func TestRunDryRun(t *testing.T) {
 	depMgr.EXPECT().GetUpdatableDependencies().Return(deps, nil).Times(1)
 	depMgr.EXPECT().FilterDependencies(deps, false).Return(deps).Times(1)
 	console.EXPECT().PrintDependencies(deps, "Found 1 direct dependencies with available updates:").Times(1)
-	console.EXPECT().Warning("Dry run mode - no actual updates will be performed").Times(1)
 
 	app := New(cfg, console, depMgr, sel, upd)
 	err := app.Run()
@@ -288,21 +287,26 @@ func TestRunModTidyError(t *testing.T) {
 		{Path: "github.com/gin-gonic/gin", Version: "v1.9.1", Indirect: false},
 	}
 
-	// Setup expectations - Solo UI con AnyTimes
+	// Setup expectations - UI calls with flexibility
 	console.EXPECT().Header().Times(1)
 	console.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
-	console.EXPECT().Info(gomock.Any()).AnyTimes()
-	console.EXPECT().Progress(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	console.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 	console.EXPECT().ProgressBar(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	console.EXPECT().Success(gomock.Any(), gomock.Any()).AnyTimes()
 	console.EXPECT().PrintDependencies(gomock.Any(), gomock.Any()).AnyTimes()
 	console.EXPECT().PrintUpdateResult(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
+	console.EXPECT().Warning("go mod tidy failed: %v", errors.New("mod tidy failed")).Times(1)
+
 	depMgr.EXPECT().GetUpdatableDependencies().Return(deps, nil).Times(1)
 	depMgr.EXPECT().FilterDependencies(deps, false).Return(deps).Times(1)
 
-	// Solo llamada individual (eliminamos la final)
-	upd.EXPECT().UpdateDependencies([]dependency.Dependency{deps[0]}, false).Return(updater.UpdateResult{Success: true}).Times(1)
+	// Individual dependency update succeeds
+	upd.EXPECT().UpdateDependencies([]dependency.Dependency{deps[0]}, false).Return(updater.UpdateResult{
+		Updated: deps,
+		Failed:  []updater.UpdateError{},
+		Success: true,
+	}).Times(1)
 
 	// Mod tidy fails
 	upd.EXPECT().RunModTidy(false).Return(errors.New("mod tidy failed")).Times(1)
@@ -310,8 +314,8 @@ func TestRunModTidyError(t *testing.T) {
 	app := New(cfg, console, depMgr, sel, upd)
 	err := app.Run()
 
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "go mod tidy failed")
+	// ⭐ NEW: Should NOT error - resilient behavior continues even if mod tidy fails
+	assert.NoError(t, err)
 }
 
 func TestRunNoDirectDependenciesWithAllFlag(t *testing.T) {

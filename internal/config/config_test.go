@@ -71,7 +71,7 @@ func TestIsInteractiveMode(t *testing.T) {
 		{
 			name: "other flags don't affect interactive mode",
 			config: Config{
-				DryRun:  true,
+				List:    true,
 				Verbose: true,
 				NoColor: true,
 				All:     true,
@@ -91,7 +91,7 @@ func TestIsInteractiveMode(t *testing.T) {
 func TestDefaultValues(t *testing.T) {
 	config := Config{}
 
-	assert.False(t, config.DryRun)
+	assert.False(t, config.List)
 	assert.False(t, config.Interactive)
 	assert.False(t, config.Verbose)
 	assert.False(t, config.NoColor)
@@ -101,7 +101,7 @@ func TestDefaultValues(t *testing.T) {
 
 func TestAllFieldsCombination(t *testing.T) {
 	config := Config{
-		DryRun:      true,
+		List:        true,
 		Interactive: true,
 		Verbose:     true,
 		NoColor:     true,
@@ -109,7 +109,7 @@ func TestAllFieldsCombination(t *testing.T) {
 		Selective:   true,
 	}
 
-	assert.True(t, config.DryRun)
+	assert.True(t, config.List)
 	assert.True(t, config.Interactive)
 	assert.True(t, config.Verbose)
 	assert.True(t, config.NoColor)

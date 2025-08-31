@@ -161,7 +161,7 @@ help:
 	@echo ""
 	@echo "Examples:"
 	@echo "  make run ARGS='--help'"
-	@echo "  make run ARGS='--select --dry-run'"
+	@echo "  make run ARGS='--select --list'"
 	@echo "  make test"
 	@echo "  make coverage"
 	@echo "  make mocks"

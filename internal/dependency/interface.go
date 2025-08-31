@@ -1,10 +1,12 @@
 package dependency
 
-// Dependency represents a Go module dependency
+// Dependency represents a Go module dependency with update information
 type Dependency struct {
-	Path     string // Module path (e.g., "github.com/gin-gonic/gin")
-	Version  string // Current version (e.g., "v1.9.1")
-	Indirect bool   // Whether this is an indirect dependency
+	Path       string // Module path (e.g., "github.com/gin-gonic/gin")
+	Version    string // Current version (e.g., "v1.9.1")
+	NewVersion string // Available new version (e.g., "v1.9.2")
+	Indirect   bool   // Whether this is an indirect dependency
+	HasUpdate  bool   // Whether an update is available
 }
 
 // String returns a string representation of the dependency
@@ -13,7 +15,18 @@ func (d Dependency) String() string {
 	if d.Indirect {
 		suffix = " (indirect)"
 	}
+
+	if d.HasUpdate && d.NewVersion != "" {
+		return d.Path + "@" + d.Version + " → " + d.NewVersion + suffix
+	}
 	return d.Path + "@" + d.Version + suffix
+}
+
+func (d Dependency) VersionInfo() string {
+	if d.HasUpdate && d.NewVersion != "" {
+		return d.Version + " → " + d.NewVersion
+	}
+	return d.Version
 }
 
 // Manager defines the interface for managing Go module dependencies
