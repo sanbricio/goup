@@ -177,18 +177,13 @@ func (a *App) updateWithProgress(deps []dependency.Dependency) updater.UpdateRes
 	var allResults []updater.UpdateResult
 
 	for i, dep := range deps {
-		a.console.ProgressBar(i, len(deps), fmt.Sprintf("Processing %s", dep.Path))
+		a.console.ProgressBar(i, len(deps), dep.Path)
 
 		// Update individual dependency - errors are captured in result
 		singleResult := a.updater.UpdateDependencies([]dependency.Dependency{dep}, a.config.Verbose)
 		allResults = append(allResults, singleResult)
 
-		// Show progress with success/failure indicator
-		if len(singleResult.Failed) > 0 {
-			a.console.ProgressBar(i+1, len(deps), fmt.Sprintf("✗ %s", dep.Path))
-		} else {
-			a.console.ProgressBar(i+1, len(deps), fmt.Sprintf("✓ %s", dep.Path))
-		}
+		a.console.ProgressBar(i+1, len(deps), dep.Path)
 	}
 
 	finalResult := updater.UpdateResult{

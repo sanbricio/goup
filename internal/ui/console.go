@@ -139,12 +139,14 @@ func (c *console) ProgressBar(current, total int, message string) {
 
 func (c *console) printSimpleProgressBar(current, total int, message string) {
 	percentage := float64(current) / float64(total) * 100
-	barWidth := 50
+	barWidth := 25
 	filled := int(float64(barWidth) * float64(current) / float64(total))
 
 	bar := strings.Repeat("=", filled) + strings.Repeat("-", barWidth-filled)
 
-	fmt.Printf("\r[%s] %3.0f%% (%d/%d) %s",
+	// Clear the line completely before printing new content
+	fmt.Print("\r\033[K")
+	fmt.Printf("[%s] %3.0f%% (%d/%d) %s",
 		bar, percentage, current, total, message)
 
 	if current == total {
@@ -154,16 +156,14 @@ func (c *console) printSimpleProgressBar(current, total int, message string) {
 
 func (c *console) printStyledProgressBar(current, total int, message string) {
 	percentage := float64(current) / float64(total) * 100
-	barWidth := 40
+	barWidth := 25
 	filled := int(float64(barWidth) * float64(current) / float64(total))
 
 	// Create the progress bar
 	var bar string
-	for i := 0; i < barWidth; i++ {
+	for i := range barWidth {
 		if i < filled {
 			bar += ProgressBarFilled
-		} else if i == filled && percentage < 100 {
-			bar += ProgressBarEdge
 		} else {
 			bar += ProgressBarEmpty
 		}
@@ -175,18 +175,18 @@ func (c *console) printStyledProgressBar(current, total int, message string) {
 		progressColor = Success
 	}
 
-	// Print the progress bar with colors
-	fmt.Printf("\r %s%s▍%s%s%s%s%s▍%s %s%3.0f%%%s %s(%d/%d)%s %s%s%s",
-		progressColor, Bold, Reset,
+	// Clear the entire line completely
+	fmt.Print("\r\033[K")
+
+	fmt.Printf(" %s%s%s %s%3.0f%%%s %s(%d/%d)%s %s%s%s",
 		progressColor, bar, Reset,
-		progressColor, Reset,
 		progressColor, percentage, Reset,
 		Secondary, current, total, Reset,
 		Accent, message, Reset)
 
 	if current == total {
 		fmt.Println() // New line when complete
-		c.Success("✓ All dependencies processed!")
+		fmt.Println() // Add extra space for clarity
 	}
 }
 
