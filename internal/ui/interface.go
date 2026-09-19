@@ -1,6 +1,6 @@
 package ui
 
-import "goup/internal/dependency"
+import "github.com/sanbricio/goup/internal/dependency"
 
 // Console defines the interface for console-based user interaction
 type Console interface {

@@ -1,4 +1,4 @@
-module goup
+module github.com/sanbricio/goup
 
 go 1.25.0
 

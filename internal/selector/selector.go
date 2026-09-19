@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"goup/internal/dependency"
+	"github.com/sanbricio/goup/internal/dependency"
 )
 
 // interactiveSelector implements the Selector interface

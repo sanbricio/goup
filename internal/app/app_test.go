@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"goup/internal/config"
-	"goup/internal/dependency"
-	"goup/internal/mocks"
-	"goup/internal/selector"
-	"goup/internal/updater"
+	"github.com/sanbricio/goup/internal/config"
+	"github.com/sanbricio/goup/internal/dependency"
+	"github.com/sanbricio/goup/internal/mocks"
+	"github.com/sanbricio/goup/internal/selector"
+	"github.com/sanbricio/goup/internal/updater"
 )
 
 func TestRunNoDependencies(t *testing.T) {

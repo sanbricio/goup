@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	"goup/internal/dependency"
+	"github.com/sanbricio/goup/internal/dependency"
 )
 
 // goUpdater implements the Updater interface using Go commands

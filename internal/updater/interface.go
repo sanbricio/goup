@@ -1,6 +1,6 @@
 package updater
 
-import "goup/internal/dependency"
+import "github.com/sanbricio/goup/internal/dependency"
 
 // UpdateResult contains the result of an update operation
 type UpdateResult struct {

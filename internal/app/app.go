@@ -3,11 +3,11 @@ package app
 import (
 	"fmt"
 
-	"goup/internal/config"
-	"goup/internal/dependency"
-	"goup/internal/selector"
-	"goup/internal/ui"
-	"goup/internal/updater"
+	"github.com/sanbricio/goup/internal/config"
+	"github.com/sanbricio/goup/internal/dependency"
+	"github.com/sanbricio/goup/internal/selector"
+	"github.com/sanbricio/goup/internal/ui"
+	"github.com/sanbricio/goup/internal/updater"
 )
 
 // App represents the main application

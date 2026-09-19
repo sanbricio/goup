@@ -1,6 +1,6 @@
 package selector
 
-import "goup/internal/dependency"
+import "github.com/sanbricio/goup/internal/dependency"
 
 // SelectionResult contains the result of a dependency selection
 type SelectionResult struct {

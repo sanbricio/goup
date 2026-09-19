@@ -7,8 +7,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"goup/internal/config"
-	"goup/internal/dependency"
+	"github.com/sanbricio/goup/internal/config"
+	"github.com/sanbricio/goup/internal/dependency"
 )
 
 // Modern ANSI color palette
